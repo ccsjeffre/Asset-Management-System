@@ -1,0 +1,86 @@
+﻿@model List<Hardware>
+@{
+    var currentSearchQuery = ViewBag.CurrentSearchQuery as string;
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+}
+
+@using Microsoft.AspNetCore.Http
+<main class="main-content" id="main-content">
+    <h1 class="text-center text-4xl font-bold text-gray-800 mb-6">List of Hardwares</h1>
+
+    <section class="bg-gradient p-6 rounded-lg mb-8 ring-1 ring-inset ring-gray-300">
+        <div class="row mb-5">
+            <div class="col">
+                <a class="btn btn-primary" asp-controller="Hardwares" asp-action="Create">Create Hardware</a>
+            </div>
+            <div class="col">
+                <form asp-controller="Hardwares" asp-action="Index" method="get" class="d-flex" role="search">
+                    <div class="input-group">
+                        <input class="form-control" type="text"
+                               placeholder="Search by Hardware Type"
+                               aria-label="Search by Hardware Type"
+                               id="search"
+                               name="searchQuery"
+                               value="@currentSearchQuery" />
+                        <button class="btn btn-primary" type="submit">Search</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <table class="table bg-gradient">
+            <thead class="bg-gray-200 text-gray-700 text-left text-sm font-semibold">
+                <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Location</th>
+                    <th>Sticker Number</th>
+                    <th>Brand</th>
+                    <th>Status</th>
+                    <th>Date Acquisition</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var hardware in Model)
+                {
+                    <tr class="bg-white">
+                        <td>@hardware.HardId</td>
+                        <td>@hardware.HardType</td>
+                        <td>@hardware.HardLocation</td>
+                        <td>@hardware.HardStickerNum</td>
+                        <td>@hardware.HardBrand</td>
+                        <td>
+                            @{
+                                var status = hardware.HardStatus?.ToLower();
+                                var statusColor = status switch
+                                {
+                                    "functional" => "bg-green-100 text-green-800",
+                                    "on borrowed" => "bg-orange-100 text-orange-800",
+                                    "deployed" => "bg-blue-100 text-blue-800",
+                                    "defective & under repair" => "bg-red-100 text-red-800",
+                                    _ => "bg-gray-100 text-gray-800"
+                                };
+                            }
+                            <span class="px-3 py-1 rounded-full text-sm font-semibold @statusColor">
+                                @hardware.HardStatus
+                            </span>
+                        </td>
+
+                        <td>@hardware.DateAcquisition.ToString("MM/dd/yyyy")</td>
+                        <td style="white-space:nowrap">
+                            @*Edit Button*@
+                            <a class="btn btn-secondary btn-sm" asp-controller="Hardwares"
+                               asp-action="Edit" asp-route-id="@hardware.HardId">Edit</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+</main>
+
