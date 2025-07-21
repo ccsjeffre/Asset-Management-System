@@ -6,9 +6,9 @@ namespace Asset_Management_System.Models
 {
     public class BorrowerDTO
     {
-        public int HardId { get; set; }
-        [ForeignKey("HardId")]
-        public virtual Hardware? Hardware { get; set; }
+        //public int HardId { get; set; }
+        //[ForeignKey("HardId")]
+        //public virtual Hardware? Hardware { get; set; }
         [Required(ErrorMessage = "Borrower's Name is required"), MaxLength(100)]
         public string? BorrowersName { get; set; }
         [Required(ErrorMessage = "Borrower's Department is required"), MaxLength(100)]
