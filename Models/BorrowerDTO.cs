@@ -15,7 +15,7 @@ namespace Asset_Management_System.Models
         public string? Department { get; set; }
         [Required(ErrorMessage = "Borrow Purpose is required"), MaxLength(100)]
         public string? BorrowPurpose { get; set; }
-        public string BorrowStatus { get; set; } = "Pending"; 
+        public string BorrowStatus { get; set; } = "Pending";
         public DateTime BorrowedOn { get; set; }
         [Required(ErrorMessage = "Expected Return Date s required")]
         public DateTime? ReturnOn { get; set; }
@@ -24,5 +24,7 @@ namespace Asset_Management_System.Models
         public string? ReleasedBy { get; set; }
         [Required(ErrorMessage = "Receiver's Name is required"), MaxLength(100)]
         public string? ReceivedBy { get; set; }
+
+        public List<int>? HardIds { get; set; }
     }
 }

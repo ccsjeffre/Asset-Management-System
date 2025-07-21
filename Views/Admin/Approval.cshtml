@@ -8,29 +8,29 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 }
 @using Microsoft.AspNetCore.Http
-<div class="flex">
-    <main class="main-content align-items-center" id="main-content">
-        <h2 class="text-center text-3xl font-bold text-gray-800 mb-6">Borrowing Approval</h2>
+<main class="main-content align-items-center" id="main-content">
+    <h2 class="text-center text-3xl font-bold text-gray-800 mb-6">Borrowing Approval</h2>
 
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4">
-                @TempData["SuccessMessage"]
-            </div>
-        }
-        @if (TempData["ErrorMessage"] != null)
-        {
-            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
-                @TempData["ErrorMessage"]
-            </div>
-        }
-        @if (TempData["WarningMessage"] != null)
-        {
-            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
-                @TempData["WarningMessage"]
-            </div>
-        }
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
+            @TempData["WarningMessage"]
+        </div>
+    }
 
+    <section class="bg-gradient p-6 rounded-lg mb-8 ring-1 ring-inset ring-gray-300">
         <div class="table-responsive">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-200 text-gray-700 text-left text-sm font-semibold">
@@ -59,23 +59,53 @@
                                 <td class="py-2 px-4">@hard.BorrowersId</td>
                                 <td class="py-2 px-4">@hard.BorrowersName</td>
                                 <td class="py-2 px-4">@hard.Department</td>
-                                <td class="py-2 px-4">@hard.Hardware?.HardType</td>
-                                <td class="py-2 px-4">@hard.Hardware?.HardStickerNum</td>
+
+                                <td class="py-2 px-4">
+                                    @if (hard.BorrowedHardwares != null && hard.BorrowedHardwares.Any())
+                                    {
+                                        foreach (var bh in hard.BorrowedHardwares)
+                                        {
+                                            <div>@bh.Hardware?.HardType</div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-gray-400 italic">None</span>
+                                    }
+                                </td>
+
+                                <td class="py-2 px-4">
+                                    @if (hard.BorrowedHardwares != null && hard.BorrowedHardwares.Any())
+                                    {
+                                        foreach (var bh in hard.BorrowedHardwares)
+                                        {
+                                            <div>@bh.Hardware?.HardStickerNum</div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-gray-400 italic">None</span>
+                                    }
+                                </td>
+
                                 <td class="py-2 px-4">@hard.BorrowPurpose</td>
+
                                 <td class="py-2 px-4">
                                     <span class="px-2 py-1 rounded-full text-xs font-semibold
-                                    @(hard.BorrowStatus == "Pending" ? "bg-yellow-100 text-yellow-800" :
-                                      hard.BorrowStatus == "Approved" ? "bg-green-100 text-green-800" :
-                                      hard.BorrowStatus == "Rejected" ? "bg-red-100 text-red-800" :
-                                      "bg-blue-100 text-blue-800")">
+                    @(hard.BorrowStatus == "Pending" ? "bg-yellow-100 text-yellow-800" :
+                      hard.BorrowStatus == "Approved" ? "bg-green-100 text-green-800" :
+                      hard.BorrowStatus == "Rejected" ? "bg-red-100 text-red-800" :
+                      "bg-blue-100 text-blue-800")">
                                         @hard.BorrowStatus
                                     </span>
                                 </td>
+
                                 <td class="py-2 px-4">@hard.BorrowedOn.ToString("MM/dd/yyyy")</td>
                                 <td class="py-2 px-4">@hard.ReturnOn?.ToString("MM/dd/yyyy")</td>
                                 <td class="py-2 px-4">@hard.ApprovedBy</td>
                                 <td class="py-2 px-4">@hard.ReleasedBy</td>
                                 <td class="py-2 px-4">@hard.ReceivedBy</td>
+
                                 <td class="py-2 px-4 whitespace-nowrap">
                                     @if (hard.BorrowStatus == "Pending")
                                     {
@@ -113,6 +143,6 @@
                 </tbody>
             </table>
         </div>
-    </main>
-</div>
+    </section>
+</main>
 

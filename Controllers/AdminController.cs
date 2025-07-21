@@ -17,7 +17,8 @@ namespace Asset_Management_System.Controllers
         public async Task<IActionResult> Approval()
         {
             var requests = await context.Borrowers
-                .Include(b => b.Hardware)
+                .Include(b => b.BorrowedHardwares!)
+                    .ThenInclude(bh => bh.Hardware)
                 .Where(b => b.BorrowStatus == "Pending")
                 .OrderByDescending(b => b.BorrowedOn)
                 .ToListAsync();
@@ -25,12 +26,14 @@ namespace Asset_Management_System.Controllers
             return View(requests);
         }
 
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveRequest(int id)
         {
             var request = await context.Borrowers
-                .Include(b => b.Hardware)
+                .Include(b => b.BorrowedHardwares!)
+                    .ThenInclude(bh => bh.Hardware)
                 .FirstOrDefaultAsync(b => b.BorrowersId == id);
 
             if (request == null)
@@ -45,9 +48,9 @@ namespace Asset_Management_System.Controllers
                 return RedirectToAction("Approval");
             }
 
-            if (request.Hardware == null)
+            if (request.BorrowedHardwares == null || !request.BorrowedHardwares.Any())
             {
-                TempData["ErrorMessage"] = "Associated hardware not found for this request. Approval aborted.";
+                TempData["ErrorMessage"] = "No hardware associated with this request.";
                 return RedirectToAction("Approval");
             }
 
@@ -56,27 +59,27 @@ namespace Asset_Management_System.Controllers
                 request.BorrowStatus = "Approved";
                 request.ApprovedBy = "LEIF JAY B. DE SAGUN, PhD";
 
-                // Update hardware status
-                var hardware = await context.Hardwares
-                    .FirstOrDefaultAsync(h => h.HardId == request.Hardware.HardId);
-
-                if (hardware != null)
+                foreach (var borrowed in request.BorrowedHardwares)
                 {
-                    hardware.HardStatus = "On Borrowed";
-                }
+                    var hardware = borrowed.Hardware;
+                    if (hardware != null)
+                    {
+                        hardware.HardStatus = "On Borrowed";
 
-                // Update inventory based on HardType
-                var inventory = await context.Inventorys
-                    .FirstOrDefaultAsync(i => i.HardType == request.Hardware.HardType);
+                        // Update inventory
+                        var inventory = await context.Inventorys
+                            .FirstOrDefaultAsync(i => i.HardType == hardware.HardType);
 
-                if (inventory != null && inventory.AvailableQuantity >= 1)
-                {
-                    inventory.AvailableQuantity--;
-                    inventory.BorrowedQuantity++;
-                    inventory.TotalQuantity = inventory.AvailableQuantity
-                                            + inventory.BorrowedQuantity
-                                            + inventory.DeployedQuantity
-                                            + inventory.NonFunctionalQuantity;
+                        if (inventory != null && inventory.AvailableQuantity >= 1)
+                        {
+                            inventory.AvailableQuantity--;
+                            inventory.BorrowedQuantity++;
+                            inventory.TotalQuantity = inventory.AvailableQuantity
+                                                    + inventory.BorrowedQuantity
+                                                    + inventory.DeployedQuantity
+                                                    + inventory.NonFunctionalQuantity;
+                        }
+                    }
                 }
 
                 await context.SaveChangesAsync();
@@ -90,12 +93,13 @@ namespace Asset_Management_System.Controllers
 
             return RedirectToAction("Approval");
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectRequest(int id)
         {
             var request = await context.Borrowers
-                .Include(b => b.Hardware)
+                .Include(b => b.BorrowedHardwares) // optional; no need to access Hardware here
                 .FirstOrDefaultAsync(b => b.BorrowersId == id);
 
             if (request == null)
@@ -126,5 +130,6 @@ namespace Asset_Management_System.Controllers
 
             return RedirectToAction("Approval");
         }
+
     }
 }

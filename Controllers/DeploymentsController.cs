@@ -139,70 +139,6 @@ namespace Asset_Management_System.Controllers
 
             return RedirectToAction("DeploymentApproval");
         }
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> ApproveRequest(int id)
-        //{
-        //    var request = await context.Deployments
-        //        .Include(b => b.Hardware)
-        //        .FirstOrDefaultAsync(d => d.DeployId == id);
-
-        //    if (request == null)
-        //    {
-        //        TempData["ErrorMessage"] = "Borrow request not found.";
-        //        return RedirectToAction("DeploymentApproval");
-        //    }
-
-        //    if (request.DeployStatus != "Pending")
-        //    {
-        //        TempData["ErrorMessage"] = "Request is not in 'Pending' status and cannot be approved.";
-        //        return RedirectToAction("DeploymentApproval");
-        //    }
-
-        //    if (request.Hardware == null)
-        //    {
-        //        TempData["ErrorMessage"] = "Associated hardware not found for this request. Approval aborted.";
-        //        return RedirectToAction("DeploymentApproval");
-        //    }
-
-        //    try
-        //    {
-        //        request.DeployStatus = "Approved";
-        //        request.ApprovedBy = "LEIF JAY B. DE SAGUN, PhD";
-
-        //        // Update hardware status
-        //        var hardware = await context.Hardwares
-        //            .FirstOrDefaultAsync(h => h.HardId == request.Hardware.HardId);
-
-        //        if (hardware != null)
-        //        {
-        //            hardware.HardStatus = "On Borrowed";
-        //        }
-
-        //        // Update inventory based on HardType
-        //        var inventory = await context.Inventorys
-        //            .FirstOrDefaultAsync(i => i.HardType == request.Hardware.HardType);
-
-        //        if (inventory != null && inventory.AvailableQuantity >= 1)
-        //        {
-        //            inventory.AvailableQuantity--;
-        //            inventory.BorrowedQuantity++;
-        //            inventory.TotalQuantity = inventory.AvailableQuantity
-        //                                    + inventory.BorrowedQuantity
-        //                                    + inventory.NonFunctionalQuantity;
-        //        }
-
-        //        await context.SaveChangesAsync();
-
-        //        TempData["SuccessMessage"] = "Request approved successfully!";
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        TempData["ErrorMessage"] = "An error occurred: " + ex.Message;
-        //    }
-
-        //    return RedirectToAction("DeploymentApproval");
-        //}
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveRequest(int id)
@@ -304,14 +240,19 @@ namespace Asset_Management_System.Controllers
         private async Task PopulateHardwareDropdowns()
         {
             var functionalHardwares = await context.Hardwares
-                .Where(h => h.HardStatus == "Functional")
+                .Where(h => h.HardStatus == "Available" || h.HardStatus == "Functional")
                 .OrderBy(h => h.HardStickerNum)
+                .Select(h => new
+                {
+                    h.HardId,
+                    DisplayText = h.HardType + " (" + h.HardStickerNum + ")"
+                })
                 .ToListAsync();
 
             ViewBag.HardwareTypes = new SelectList(
                 functionalHardwares,
                 "HardId",
-                "HardType",
+                "DisplayText",
                 null
             );
         }

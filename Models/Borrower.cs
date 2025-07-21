@@ -23,8 +23,8 @@ namespace Asset_Management_System.Models
         public string? ReleasedBy { get; set; }
         [Required(ErrorMessage = "Receiver's Name is required"), MaxLength(100)]
         public string? ReceivedBy { get; set; }
-        public int HardId { get; set; } 
-        [ForeignKey("HardId")]
-        public virtual Hardware? Hardware { get; set; }
+
+        public ICollection<BorrowedHardware> BorrowedHardwares { get; set; } = new List<BorrowedHardware>();
+
     }
 }

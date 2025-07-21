@@ -16,18 +16,28 @@ namespace Asset_Management_System.Controllers
 
         private async Task PopulateHardwareDropdowns()
         {
-            var borrowedHardwareIds = await context.Borrowers
-                .Where(b => b.ReturnOn == null)
-                .Select(b => b.HardId)
+            // Get list of hardware IDs that are currently borrowed (not returned yet)
+            var borrowedHardwareIds = await context.BorrowedHardwares
+                .Include(bh => bh.Borrower)
+                .Where(bh => bh.Borrower != null && bh.Borrower.ReturnOn == null)
+                .Select(bh => bh.HardId)
                 .ToListAsync();
 
-            var functionalHardwares = await context.Hardwares
-                .Where(h => h.HardStatus == "Functional")
+            // Filter for hardwares with status Available or Functional and not currently borrowed
+            var selectableHardwares = await context.Hardwares
+                .Where(h => (h.HardStatus == "Available" || h.HardStatus == "Functional")
+                            && !borrowedHardwareIds.Contains(h.HardId))
                 .OrderBy(h => h.HardStickerNum)
+                .Select(h => new
+                {
+                    h.HardId,
+                    Display = h.HardType + " - " + h.HardStickerNum
+                })
                 .ToListAsync();
 
-            ViewBag.HardwareTypes = new SelectList(functionalHardwares, "HardId", "HardType");
-            ViewBag.StickerNumbers = new SelectList(functionalHardwares, "HardId", "HardStickerNum");
+            // Populate dropdowns with combined label
+            ViewBag.HardwareTypes = new MultiSelectList(selectableHardwares, "HardId", "Display");
+            ViewBag.StickerNumbers = new SelectList(selectableHardwares, "HardId", "Display");
         }
 
         [HttpGet]
@@ -47,30 +57,15 @@ namespace Asset_Management_System.Controllers
                 return View(borrowerDTO);
             }
 
-            var hardware = await context.Hardwares
-                .FirstOrDefaultAsync(h => h.HardId == borrowerDTO.HardId);
-
-            if (hardware == null)
+            if (borrowerDTO.HardIds == null || !borrowerDTO.HardIds.Any())
             {
-                ModelState.AddModelError("HardId", "Selected hardware is invalid.");
-                await PopulateHardwareDropdowns();
-                return View(borrowerDTO);
-            }
-
-            // Check if the hardware is already requested and pending
-            var existingPendingRequest = await context.Borrowers
-                .AnyAsync(b => b.HardId == borrowerDTO.HardId && b.BorrowStatus == "Pending");
-
-            if (existingPendingRequest)
-            {
-                ModelState.AddModelError(string.Empty, "This hardware is already pending in another request.");
+                ModelState.AddModelError(string.Empty, "Please select at least one hardware.");
                 await PopulateHardwareDropdowns();
                 return View(borrowerDTO);
             }
 
             var borrower = new Borrower
             {
-                HardId = borrowerDTO.HardId,
                 BorrowersName = borrowerDTO.BorrowersName,
                 Department = borrowerDTO.Department,
                 BorrowPurpose = borrowerDTO.BorrowPurpose,
@@ -79,7 +74,11 @@ namespace Asset_Management_System.Controllers
                 ReturnOn = borrowerDTO.ReturnOn,
                 ApprovedBy = "LEIF JAY B. DE SAGUN, PhD",
                 ReleasedBy = borrowerDTO.ReleasedBy,
-                ReceivedBy = borrowerDTO.ReceivedBy
+                ReceivedBy = borrowerDTO.ReceivedBy,
+                BorrowedHardwares = borrowerDTO.HardIds.Select(id => new BorrowedHardware
+                {
+                    HardId = id
+                }).ToList()
             };
 
             context.Borrowers.Add(borrower);
@@ -87,6 +86,7 @@ namespace Asset_Management_System.Controllers
 
             return RedirectToAction("MyRequests");
         }
+
 
         public async Task<IActionResult> GetInventoryStatusPartial()
         {
@@ -108,12 +108,14 @@ namespace Asset_Management_System.Controllers
         public async Task<IActionResult> MyRequests()
         {
             var borrowers = await context.Borrowers
-                .Include(b => b.Hardware)
-                .OrderByDescending(h => h.BorrowersId)
+                .Include(b => b.BorrowedHardwares)
+                    .ThenInclude(bh => bh.Hardware)
+                .OrderByDescending(b => b.BorrowersId)
                 .ToListAsync();
 
             return View(borrowers);
         }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -129,58 +131,34 @@ namespace Asset_Management_System.Controllers
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ReturnHardware(int id)
+        public async Task<IActionResult> ReturnHardware(int id, string ReceivedBy, DateTime ReturnOn, List<string> ReturnedStatuses)
         {
-            var request = await context.Borrowers
-                .Include(b => b.Hardware)
+            var borrower = await context.Borrowers
+                .Include(b => b.BorrowedHardwares)
                 .FirstOrDefaultAsync(b => b.BorrowersId == id);
 
-            if (request == null)
-            {
-                TempData["ErrorMessage"] = "Borrow request not found.";
-                return RedirectToAction("MyRequests");
-            }
+            if (borrower == null)
+                return NotFound();
 
-            if (request.BorrowStatus != "Approved")
-            {
-                TempData["ErrorMessage"] = "Only approved requests can be returned.";
-                return RedirectToAction("MyRequests");
-            }
+            borrower.ReceivedBy = ReceivedBy;
+            borrower.ReturnOn = ReturnOn;
+            borrower.BorrowStatus = "Returned";
 
-            try
+            // Assign the status to each hardware item
+            for (int i = 0; i < borrower.BorrowedHardwares.Count; i++)
             {
-                request.BorrowStatus = "Returned";
-
-                if (request.Hardware == null)
+                var bh = borrower.BorrowedHardwares.ElementAt(i);
+                var hardware = await context.Hardwares.FindAsync(bh.HardId);
+                if (hardware != null && i < ReturnedStatuses.Count)
                 {
-                    TempData["ErrorMessage"] = "Associated hardware not found.";
-                    return RedirectToAction("MyRequests");
+                    hardware.HardStatus = ReturnedStatuses[i]; // Use selected value
                 }
-
-
-                request.Hardware.HardStatus = "Avaibale";
-
-                //Update inventory
-                var inventory = await context.Inventorys
-                    .FirstOrDefaultAsync(i => i.HardType == request.Hardware.HardType);
-
-                if (inventory != null)
-                {
-                    inventory.BorrowedQuantity--;
-                    inventory.AvailableQuantity++;
-                }
-
-                await context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Hardware returned successfully.";
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = "Error while returning hardware: " + ex.Message;
             }
 
-            return RedirectToAction("MyRequests");
+            await context.SaveChangesAsync();
+            return RedirectToAction("BorrowerRequestsList", "Returns");
         }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -212,6 +190,17 @@ namespace Asset_Management_System.Controllers
 
             return View(inventoryData);
         }
+        public async Task<IActionResult> Returning()
+        {
+            var borrowers = await context.Borrowers
+                .Include(b => b.BorrowedHardwares)
+                    .ThenInclude(bh => bh.Hardware)
+                .Where(b => b.BorrowStatus == "Approved")
+                .ToListAsync();
+
+            return View(borrowers);
+        }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]

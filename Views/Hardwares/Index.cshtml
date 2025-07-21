@@ -56,17 +56,17 @@
                         <td>@hardware.HardBrand</td>
                         <td>
                             @{
-                                var status = hardware.HardStatus?.ToLower();
+                                var status = hardware.HardStatus?.Trim().ToLower();
                                 var statusColor = status switch
                                 {
-                                    "functional" => "bg-green-100 text-green-800",
-                                    "on borrowed" => "bg-orange-100 text-orange-800",
-                                    "deployed" => "bg-blue-100 text-blue-800",
-                                    "defective & under repair" => "bg-red-100 text-red-800",
-                                    _ => "bg-gray-100 text-gray-800"
+                                    "functional" => "bg-green-100 text-green-800 ring-1 ring-green-300",
+                                    "on borrowed" => "bg-yellow-100 text-yellow-800 ring-1 ring-yellow-300",
+                                    "deployed" => "bg-blue-100 text-blue-800 ring-1 ring-blue-300",
+                                    "defective" or "defective & under repair" => "bg-red-100 text-red-800 ring-1 ring-red-300",
+                                    _ => "bg-gray-100 text-gray-800 ring-1 ring-gray-300"
                                 };
                             }
-                            <span class="px-3 py-1 rounded-full text-sm font-semibold @statusColor">
+                            <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold @statusColor">
                                 @hardware.HardStatus
                             </span>
                         </td>

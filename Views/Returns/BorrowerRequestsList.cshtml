@@ -1,173 +1,86 @@
-﻿@model List<Borrower>
+﻿@model List<Asset_Management_System.Models.Borrower>
 
 @{
+    ViewData["Title"] = "Returning";
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 }
-@using Microsoft.AspNetCore.Http
 
 <main class="main-content" id="main-content">
-    <h2 class="text-center text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Borrowers Requests List</h2>
+    <h2 class="text-center text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Returning</h2>
 
-    <section class="bg-gradient p-6 rounded-lg mb-8 ring-1 ring-inset ring-gray-300">
-        <div class="overflow-x-auto rounded-lg shadow">
-            <table class="min-w-full text-sm border border-gray-200">
-                <thead class="bg-gray-200 text-gray-700 text-left uppercase tracking-wide">
+    <section class="bg-white p-4 rounded-lg shadow ring-1 ring-gray-300">
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm border border-gray-300">
+                <thead class="bg-gray-100 text-xs font-semibold text-gray-600">
                     <tr>
-                        <th class="p-3 border">ID</th>
-                        <th class="p-3 border">Name</th>
-                        <th class="p-3 border">Department</th>
-                        <th class="p-3 border">Type</th>
-                        <th class="p-3 border">Sticker Number</th>
-                        <th class="p-3 border">Purpose</th>
-                        <th class="p-3 border">Status</th>
-                        <th class="p-3 border">Requested On</th>
-                        <th class="p-3 border">Expect Return</th>
-                        <th class="p-3 border">Approved By</th>
-                        <th class="p-3 border">Released By</th>
-                        <th class="p-3 border">Received By</th>
-                        <th class="p-3 border">Action</th>
+                        <th class="p-3 border text-left">Borrowed Item Info</th>
+                        <th class="p-3 border text-left">Status</th>
+                        <th class="p-3 border text-left">Received By</th>
+                        <th class="p-3 border text-left">Date Returned</th>
+                        <th class="p-3 border text-left">Confirm</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var reqhardware in Model.Where(m => m.BorrowStatus == "Approved" || m.BorrowStatus == "Returned"))
+                    @foreach (var borrower in Model.Where(b => b.BorrowStatus == "Approved"))
                     {
+                        <form asp-action="ReturnHardware" asp-controller="Borrowers" asp-route-id="@borrower.BorrowersId" method="post">
+                            @Html.AntiForgeryToken()
                         <tr class="hover:bg-gray-50 border-b">
-                            <td class="p-2 border">@reqhardware.BorrowersId</td>
-                            <td class="p-2 border">@reqhardware.BorrowersName</td>
-                            <td class="p-2 border">@reqhardware.Department</td>
-                            <td class="p-2 border">@reqhardware.Hardware?.HardType</td>
-                            <td class="p-2 border">@reqhardware.Hardware?.HardStickerNum</td>
-                            <td class="p-2 border">@reqhardware.BorrowPurpose</td>
-                            <td class="p-2 border">
-                                <span class="px-2 py-1 rounded-full text-xs font-semibold
-                                    @(reqhardware.BorrowStatus == "Pending" ? "bg-yellow-100 text-yellow-800" :
-                                      reqhardware.BorrowStatus == "Approved" ? "bg-green-100 text-green-800" :
-                                      reqhardware.BorrowStatus == "Rejected" ? "bg-red-100 text-red-800" :
-                                      "bg-blue-100 text-blue-800")">
-                                    @reqhardware.BorrowStatus
-                                </span>
-                            </td>
-                            <td class="p-2 border">@reqhardware.BorrowedOn.ToString("MM/dd/yyyy")</td>
-                            <td class="p-2 border">@reqhardware.ReturnOn?.ToString("MM/dd/yyyy")</td>
-                            <td class="p-2 border">@reqhardware.ApprovedBy</td>
-                            <td class="p-2 border">
-                                @if (reqhardware.BorrowStatus == "Approved")
-                                {
-                                    <div id="released_display_@reqhardware.BorrowersId" class="flex items-center">
-                                        <span>@reqhardware.ReleasedBy</span>
-                                        <button type="button" onclick="toggleField('released', @reqhardware.BorrowersId)" class="ml-2 text-blue-500 text-xs hover:text-blue-700">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
+                            <!-- Borrowed Item Info -->
+                            <td class="p-3 border">
+                                <div class="font-semibold">Name: @borrower.BorrowersName</div>
+                                <div class="font-semibold text-sm text-gray-600">Department: @borrower.Department</div>
+                                    @foreach (var bh in borrower.BorrowedHardwares)
+                                    {
+                                    <div class="text-sm">
+                                        • @bh.Hardware?.HardType - Sticker #@bh.Hardware?.HardStickerNum
                                     </div>
-                                    <form asp-action="UpdateReleasedBy"
-                                          asp-controller="Borrowers"
-                                          asp-route-id="@reqhardware.BorrowersId"
-                                          method="post"
-                                          class="hidden mt-1"
-                                          id="released_form_@reqhardware.BorrowersId">
-                                        @Html.AntiForgeryToken()
-                                        <input type="text" name="ReleasedBy" value="@reqhardware.ReleasedBy"
-                                               class="border rounded px-2 py-1 text-sm w-full" />
-                                        <div class="mt-1 flex gap-2">
-                                            <button type="submit" class="bg-blue-500 text-white text-xs px-2 py-1 rounded hover:bg-blue-600">Save</button>
-                                            <button type="button" onclick="cancelField('released', @reqhardware.BorrowersId)" class="text-xs text-gray-600 hover:text-gray-800">Cancel</button>
-                                        </div>
-                                    </form>
-                                }
-                                else
-                                {
-                                    @reqhardware.ReleasedBy
-                                }
+                                    }
                             </td>
-                            <td class="p-2 border">
-                                @if (reqhardware.BorrowStatus == "Approved")
-                                {
-                                    <div id="received_display_@reqhardware.BorrowersId" class="flex items-center">
-                                        <span>@reqhardware.ReceivedBy</span>
-                                        <button type="button" onclick="toggleField('received', @reqhardware.BorrowersId)" class="ml-2 text-blue-500 text-xs hover:text-blue-700">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                    <form asp-action="UpdateReceivedBy"
-                                          asp-controller="Borrowers"
-                                          asp-route-id="@reqhardware.BorrowersId"
-                                          method="post"
-                                          class="hidden mt-1"
-                                          id="received_form_@reqhardware.BorrowersId">
-                                        @Html.AntiForgeryToken()
-                                        <input type="text" name="ReceivedBy" value="@reqhardware.ReceivedBy"
-                                               class="border rounded px-2 py-1 text-sm w-full" />
-                                        <div class="mt-1 flex gap-2">
-                                            <button type="submit" class="bg-blue-500 text-white text-xs px-2 py-1 rounded hover:bg-blue-600">Save</button>
-                                            <button type="button" onclick="cancelField('received', @reqhardware.BorrowersId)" class="text-xs text-gray-600 hover:text-gray-800">Cancel</button>
-                                        </div>
-                                    </form>
-                                }
-                                else
-                                {
-                                    @reqhardware.ReceivedBy
-                                }
-                            </td>
-                            <td class="p-2 border whitespace-nowrap">
-                                @if (reqhardware.BorrowStatus == "Approved")
-                                {
-                                    <div class="flex items-center gap-2">
-                                     
-                                        <form asp-action="ReturnHardware" asp-controller="Borrowers"
-                                              asp-route-id="@reqhardware.BorrowersId" method="post"
-                                              onsubmit="return confirm('Confirm return of this hardware?');">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="bg-indigo-500 text-white text-xs px-2 py-1 rounded hover:bg-indigo-600 flex items-center justify-center">
-                                                Confirm Return
-                                            </button>
 
-                                        </form>
+                            <!-- Status Dropdown -->
+                            <td class="p-3 border">
+                                    @foreach (var bh in borrower.BorrowedHardwares)
+                                    {
+                                    <div class="mb-1">
+                                        <label class="text-xs font-semibold block mb-0.5">
+                                                @bh.Hardware?.HardType - @bh.Hardware?.HardStickerNum
+                                        </label>
+                                        <select name="ReturnedStatuses[]" class="w-full border rounded px-2 py-1 text-sm">
+                                            <option value="Functional">Functional</option>
+                                            <option value="Defective">Defective</option>
+                                        </select>
                                     </div>
-                                }
-                                else if (reqhardware.BorrowStatus == "Returned")
-                                {
-                                    <span class="inline-flex items-center text-blue-600 font-semibold">
-                                        <i class="fas fa-undo mr-1"></i> Returned
-                                    </span>
-                                }
-                                @* else if (reqhardware.BorrowStatus == "Rejected")
-                                {
-                                    <span class="inline-flex items-center text-red-600 font-semibold">
-                                        <i class="fas fa-times-circle mr-1"></i> Rejected
-                                    </span>
-                                } *@
-                                else
-                                {
-                                    <form asp-action="CancelRequest" asp-controller="Borrowers"
-                                          asp-route-id="@reqhardware.BorrowersId" method="post"
-                                          class="inline" onsubmit="return confirm('Are you sure you want to cancel this request?');">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="bg-gray-500 text-white text-xs px-2 py-1 rounded hover:bg-gray-600">
-                                            Cancel
-                                        </button>
-                                    </form>
-                                }
+                                    }
+                            </td>
+
+                            <!-- Received By -->
+                            <td class="p-3 border">
+                                <input type="text" name="ReceivedBy"
+                                       value="@borrower.ReceivedBy"
+                                       class="w-full border px-2 py-1 text-sm rounded" />
+                            </td>
+
+                            <!-- Date Returned -->
+                            <td class="p-3 border">
+                                <input type="date" name="ReturnOn"
+                                       value="@borrower.ReturnOn?.ToString("yyyy-MM-dd")"
+                                       class="w-full border px-2 py-1 text-sm rounded" />
+                            </td>
+
+                            <!-- Confirm Button -->
+                            <td class="p-3 border">
+                                <button type="submit"
+                                        class="text-xs px-3 py-1 border border-indigo-500 text-indigo-500 hover:bg-indigo-500 hover:text-white rounded transition">
+                                    CONFIRM RETURN
+                                </button>
                             </td>
                         </tr>
+                        </form>
                     }
                 </tbody>
             </table>
         </div>
     </section>
 </main>
-
-<script>
-    function toggleField(field, id) {
-        document.getElementById(`${field}_display_${id}`).style.display = 'none';
-        document.getElementById(`${field}_form_${id}`).classList.remove('hidden');
-    }
-
-    function cancelField(field, id) {
-        document.getElementById(`${field}_form_${id}`).classList.add('hidden');
-        document.getElementById(`${field}_display_${id}`).style.display = 'flex';
-    }
-</script>

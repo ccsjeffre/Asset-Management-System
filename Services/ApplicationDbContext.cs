@@ -14,21 +14,32 @@ public class ApplicationDbContext : DbContext
     public DbSet<Inventory> Inventorys { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<Deployment> Deployments { get; set; }
+    public DbSet<BorrowedHardware> BorrowedHardwares { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Hardware>()
             .HasKey(h => h.HardId);
 
+        modelBuilder.Entity<BorrowedHardware>()
+        .HasKey(bh => bh.BorrowedHardwareId);
+
+        modelBuilder.Entity<BorrowedHardware>()
+       .HasOne(bh => bh.Borrower)
+       .WithMany(b => b.BorrowedHardwares)
+       .HasForeignKey(bh => bh.BorrowersId)
+       .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<BorrowedHardware>()
+        .HasOne(bh => bh.Hardware)
+        .WithMany()
+        .HasForeignKey(bh => bh.HardId)
+        .OnDelete(DeleteBehavior.Cascade);
+
         modelBuilder.Entity<Hardware>()
             .Property(h => h.HardType)
             .IsRequired()
             .HasColumnName("HardType");
-
-        modelBuilder.Entity<Borrower>()
-            .HasOne(b => b.Hardware)
-            .WithMany()
-            .HasForeignKey(b => b.HardId);
 
         modelBuilder.Entity<Inventory>()
             .HasOne(i => i.Hardware)

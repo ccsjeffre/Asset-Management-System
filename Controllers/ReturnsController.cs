@@ -14,11 +14,11 @@ namespace Asset_Management_System.Controllers
         public IActionResult BorrowerRequestsList()
         {
             var borrowers = context.Borrowers
-                .Include(b => b.Hardware)
+                .Include(b => b.BorrowedHardwares)
+                    .ThenInclude(bh => bh.Hardware)
                 .ToList();
 
             return View(borrowers);
         }
-
     }
 }
